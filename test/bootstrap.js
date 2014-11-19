@@ -13,11 +13,20 @@ before(function(done) {
     paths: {
       models: require("path").join(process.cwd(), "test/fixtures/models")
     },
-    adapters: {
-      default: "sails-memory"
+    connections: {
+      memory: {
+        adapter: "sails-memory"
+      }
+    },
+    models: {
+      connection: 'memory',
+      migrate: 'drop'
     },
     session: {
       secret: "s.e.c.r.e.t"
+    },
+    hooks: {
+      grunt: false
     }
   }, function(err, sails) {
     done(err);

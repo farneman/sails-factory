@@ -1,7 +1,7 @@
 sails-factory
 =============
 
-Sails Factory is a simple model factory for Sails.js. Inspired by [factory_girl](https://github.com/thoughtbot/factory_girl) and [rosie](https://github.com/bkeepers/rosie).
+An updated fork of [Sails Factory](https://github.com/zand3rs/sails-factory). This version works with Sails.js version 10
 
 ## Installation
     
