@@ -77,6 +77,15 @@ describe("Factory", function() {
         done();
       });
     });
+    it("should return a promise if called without a callback", function(done) {
+      Factory.build("sample")
+        .then(function(sample) {
+          expect(sample).to.have.property("foo", "bar");
+          expect(sample).to.have.property("hello", "ok");
+          done();
+        })
+        .catch(done);
+    });
   });
 
   describe(".create()", function() {
@@ -101,6 +110,16 @@ describe("Factory", function() {
         expect(sample).to.have.property("description", "my description");
         done();
       });
+    });
+    it("should return a promise if called without a callback", function(done) {
+      Factory.create("sample")
+        .then(function(sample) {
+          expect(sample).to.have.property("id");
+          expect(sample).to.have.property("title", "my title");
+          expect(sample).to.have.property("description", "my description");
+          done();
+        })
+        .catch(done);
     });
   });
 

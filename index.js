@@ -2,6 +2,7 @@ var _ = require("lodash");
 var fs = require("fs");
 var path = require("path");
 var util = require("util");
+var Promise = require("bluebird");
 
 var factories = {};
 
@@ -85,12 +86,23 @@ Factory.build = function(name) {
         break;
     }
   }
+  
+  if (callback) {
+    var factory = factories[name];
+    if (!factory) throw new Error("'" + name + "' is undefined.");
 
-  var factory = factories[name];
-  if (!factory) throw new Error("'" + name + "' is undefined.");
+    var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
+    if (callback) callback(attributes);
+  } else {
+    return new Promise(function (resolve, reject) {
+      var factory = factories[name];
+      if (!factory) throw new Error("'" + name + "' is undefined.");
 
-  var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
-  if (callback) callback(attributes);
+      var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
+      resolve(attributes);
+    });
+  }
+
 };
 
 //------------------------------------------------------------------------------
@@ -117,11 +129,16 @@ Factory.create = function(name) {
   var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
   var Model = sails.models[factory.modelName.toLowerCase()];
 
-  Model.create(attributes).then(function(record) {
-    if (callback) callback(record);
-  }).catch(function(err) {
-    throw new Error(util.inspect(err, {depth: null})); 
-  });
+  if (callback)
+  {
+    Model.create(attributes).then(function(record) {
+      if (callback) callback(record);
+    }).catch(function(err) {
+      throw new Error(util.inspect(err, {depth: null})); 
+    });
+  } else {
+    return Model.create(attributes)  
+  }
 };
 
 //------------------------------------------------------------------------------
