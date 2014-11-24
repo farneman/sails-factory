@@ -93,6 +93,9 @@ describe("Factory", function() {
       Factory.define("sample")
         .attr("title", "my title")
         .attr("description", "my description");
+    
+      Factory.define("sub", "Sub")
+        .attr("sample", "sample", {association: true});
     });
 
     it("should return a model instance of a defined factory", function(done) {
@@ -121,12 +124,29 @@ describe("Factory", function() {
         })
         .catch(done);
     });
+    it("should form an association if one doesnt exist for a factory", function(done) {
+      Factory.create("sub").then(function(sub) {
+        expect(sub).to.have.property("id");
+        expect(sub).to.have.property("sample");
+        done();
+      });
+    });
+    it("should use a passed object for an association", function(done) {
+      Factory.create("sample", function(sample){
+        Factory.create("sub", {sample: sample}).then(function(sub) {
+          expect(sub).to.have.property("id");
+          expect(sub.sample).to.equal(sample.id);
+          expect(sub).to.have.property("sample");
+          done();
+        }).catch(done);
+      });
+    });
   });
 
   describe(".load()", function() {
     it("should recursively load all factory definition files from default folder", function(done) {
       Factory.load(function(count) {
-        expect(count).to.equal(2);
+        expect(count).to.equal(3);
         done();
       });
     });

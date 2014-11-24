@@ -14,6 +14,7 @@ function Factory(name, modelName) {
   this.usingDefaultModel = (!modelName) ? true : false;
   this.seqs = {};
   this.attrs = {};
+  this.options = {};
 
   factories[this.name] = this;
 }
@@ -25,9 +26,25 @@ Factory.prototype.attr = function(name, value, options) {
 
   self.seqs[name] = parseInt(value) || 0;
   self.attrs[name] = value;
+  self.options[name] = {};
 
   var opts = filterOptions(options);
-  if (opts.auto_increment) {
+  if (opts.association) {
+    self.options[name]['association'] = true;
+    self.attrs[name] = function(val) {
+      var factory = (_.isUndefined(val) || _.isEmpty(val))? value : val;
+      var assoc = _.find(sails.models[self.modelName.toLowerCase()].associations,
+                              function(association) {return association.alias == name});
+      if (assoc.type == "model" && assoc.model == factories[factory].modelName.toLowerCase()) {
+        return Factory.create(factory).then(function(res) {
+          return res.id;
+        })
+        .catch(function(err) {
+          throw new Error(util.inspect(err, {depth: null})); 
+        });
+      }
+    }
+  } else if (opts.auto_increment) {
     self.attrs[name] = function() {
       self.seqs[name] += opts.auto_increment;
       return ((_.isFunction(value)) ? value() : value) + self.seqs[name];
@@ -49,9 +66,25 @@ Factory.prototype.parent = function(name) {
   }
   _.merge(this.seqs, _.clone(factory.seqs, true));
   _.merge(this.attrs, _.clone(factory.attrs, true));
+  _.merge(this.options, _.clone(factory.options, true));
 
   return this;
 };
+
+//------------------------------------------------------------------------------
+
+Factory.prototype.evalAttrs = function (attrs) {
+  var self = this;
+  return _.reduce(attrs, function(result, val, key) {
+     if (_.has(self.options[key], 'association')) {
+       result[key] =  (_.isString(val))? this.attrs[key](val) : ((_.isFunction(val))? val() : val.id);
+     }
+     else { 
+       result[key] = (_.isFunction(val)) ? val() : val;
+     }
+     return result;
+   }, {});
+}
 
 //==============================================================================
 //-- static
@@ -87,20 +120,21 @@ Factory.build = function(name) {
     }
   }
   
+  var factory = factories[name];
+  if (!factory) throw new Error("'" + name + "' is undefined.");
+
+  var attributes = factory.evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
+ 
+  //If there is a callback set, use it
   if (callback) {
-    var factory = factories[name];
-    if (!factory) throw new Error("'" + name + "' is undefined.");
-
-    var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
-    if (callback) callback(attributes);
-  } else {
-    return new Promise(function (resolve, reject) {
-      var factory = factories[name];
-      if (!factory) throw new Error("'" + name + "' is undefined.");
-
-      var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
-      resolve(attributes);
+    Promise.props(attributes).then(function(res) {
+      callback(res)
+    }).catch(function(err) {
+      throw new Error(util.inspect(err, {depth: null})); 
     });
+  //Otherwise, return a promise
+  } else {
+    return Promise.props(attributes) 
   }
 
 };
@@ -122,23 +156,30 @@ Factory.create = function(name) {
         break;
     }
   }
-
+  
   var factory = factories[name];
   if (!factory) throw new Error("'" + name + "' is undefined.");
 
-  var attributes = evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
+  var attributes = factory.evalAttrs(_.merge(_.clone(factory.attrs, true), attrs));
   var Model = sails.models[factory.modelName.toLowerCase()];
+  
+  return Promise.props(attributes).then(function(res) {
+    //If there is a callback set use it
+    if (callback)
+    {
+      Model.create(res).then(function(record) {
+        callback(record);
+      }).catch(function(err) {
+        throw new Error(util.inspect(err, {depth: null})); 
+      });
+    //Otherwise return a promise
+    } else {
+      return Model.create(res)  
+    }
+  }).catch(function(err) {
+    throw new Error(util.inspect(err, {depth: null})); 
+  });
 
-  if (callback)
-  {
-    Model.create(attributes).then(function(record) {
-      if (callback) callback(record);
-    }).catch(function(err) {
-      throw new Error(util.inspect(err, {depth: null})); 
-    });
-  } else {
-    return Model.create(attributes)  
-  }
 };
 
 //------------------------------------------------------------------------------
@@ -204,16 +245,10 @@ function filterOptions(options) {
                         ? Math.floor(options.auto_increment)
                         : 1;
   }
+  if (options.association) {
+    opts.association = true;
+  }
   return opts;
-}
-
-//------------------------------------------------------------------------------
-
-function evalAttrs(attrs) {
-  return _.reduce(attrs, function(result, val, key) {
-           result[key] = (_.isFunction(val)) ? val() : val;
-           return result;
-         }, {});
 }
 
 //==============================================================================

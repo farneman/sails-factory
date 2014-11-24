@@ -9,12 +9,9 @@
 module.exports = {
 
   attributes: {
-    title: "string",
-    description: "string",
-    subs: {
-      collection: 'sub',
-      via: 'sample'
+    sample: {
+      model: 'sample'
     }
-  
   }
+
 };
