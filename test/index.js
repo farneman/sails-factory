@@ -88,6 +88,28 @@ describe("Factory", function() {
     });
   });
 
+  describe(".buildList()", function() {
+    before(function() {
+      Factory.define("sample")
+        .attr("foo", "bar")
+        .attr("hello", function() { return "ok"; });
+    });
+
+    it("should return an array of object instances", function(done) {
+      Factory.buildList("sample", 3, function(sample) {
+        expect(sample.length).to.equal(3);
+        done();
+      });
+    });
+    it("should return an array of object instances with overridden attributes", function(done) {
+      Factory.buildList("sample", 3, {"foo": "baz"}, function(sample) {
+        expect(sample.length).to.equal(3);
+        expect(sample[0]).to.have.property("foo", "baz");
+        done();
+      });
+    });
+  });
+
   describe(".create()", function() {
     before(function() {
       Factory.define("sample")
@@ -139,6 +161,28 @@ describe("Factory", function() {
           expect(sub).to.have.property("sample");
           done();
         }).catch(done);
+      });
+    });
+  });
+
+  describe(".createList()", function() {
+    before(function() {
+      Factory.define("sample")
+        .attr("foo", "bar")
+        .attr("hello", function() { return "ok"; });
+    });
+
+    it("should return an array of model instances", function(done) {
+      Factory.createList("sample", 3, function(sample) {
+        expect(sample.length).to.equal(3);
+        done();
+      });
+    });
+    it("should return an array of model instances with overridden attributes", function(done) {
+      Factory.createList("sample", 3, {"foo": "baz"}, function(sample) {
+        expect(sample.length).to.equal(3);
+        expect(sample[0]).to.have.property("foo", "baz");
+        done();
       });
     });
   });
