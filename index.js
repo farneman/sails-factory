@@ -136,7 +136,44 @@ Factory.build = function(name) {
   } else {
     return Promise.props(attributes) 
   }
+};
 
+//------------------------------------------------------------------------------
+
+Factory.buildList = function(name, count) {
+  var args = Array.prototype.slice.call(arguments, 2);
+  var attrs = {};
+  var callback = null;
+  var records = [];
+
+  while (arg = args.shift()) {
+    switch (typeof arg) {
+      case "object":
+        attrs = arg;
+        break;
+      case "function":
+        callback = arg;
+        break;
+    }
+  }
+  
+  if (!count || count < 1) throw new Error("count must be a positive integer.");
+
+  for (var i = 0; i < count; ++i) {
+      records.push(Factory.build(name, attrs));
+  }
+
+  //If there is a callback set, use it
+  if (callback) {
+    Promise.all(records).then(function(res) {
+      callback(res)
+    }).catch(function(err) {
+      throw new Error(util.inspect(err, {depth: null})); 
+    });
+  //Otherwise, return a promise
+  } else {
+    return Promise.all(records) 
+  }
 };
 
 //------------------------------------------------------------------------------
@@ -180,6 +217,44 @@ Factory.create = function(name) {
     throw new Error(util.inspect(err, {depth: null})); 
   });
 
+};
+
+//------------------------------------------------------------------------------
+
+Factory.createList = function(name, count) {
+  var args = Array.prototype.slice.call(arguments, 2);
+  var attrs = {};
+  var callback = null;
+  var records = [];
+
+  while (arg = args.shift()) {
+    switch (typeof arg) {
+      case "object":
+        attrs = arg;
+        break;
+      case "function":
+        callback = arg;
+        break;
+    }
+  }
+  
+  if (!count || count < 1) throw new Error("count must be a positive integer.");
+
+  for (var i = 0; i < count; ++i) {
+      records.push(Factory.create(name, attrs));
+  }
+
+  //If there is a callback set, use it
+  if (callback) {
+    Promise.all(records).then(function(res) {
+      callback(res)
+    }).catch(function(err) {
+      throw new Error(util.inspect(err, {depth: null})); 
+    });
+  //Otherwise, return a promise
+  } else {
+    return Promise.all(records) 
+  }
 };
 
 //------------------------------------------------------------------------------

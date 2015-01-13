@@ -1,7 +1,7 @@
 sails-factory
 =============
 
-An updated fork of [Sails Factory](https://github.com/zand3rs/sails-factory). This version works with Sails.js version 10
+A fork of [Sails Factory](https://github.com/nhahn/sails-factory). This version adds `.buildList` and `.createList`.
 
 ## Installation
     
@@ -57,6 +57,31 @@ Define a factory by giving it a name and an optional model name. The factory nam
       //    createdAt: <date>,
       //    updatedAt: <date>
       // }
+    });
+
+    Factory.buildList('active_user', 1, function(active_user) {
+      // active_user: array of non-persistent 'active_user' instance
+      // {
+      //    first_name: 'First Name',
+      //    last_name: 'Last Name',
+      //    random_id: <number>,
+      //    active: true
+      // }
+    });
+
+    Factory.createList('active_user', 1, function(active_user) {
+      // active_user: array of sails' User model instances
+      // [
+      //   {
+      //      id: <id>,
+      //      first_name: 'First Name',
+      //      last_name: 'Last Name',
+      //      random_id: <number>,
+      //      active: true,
+      //      createdAt: <date>,
+      //      updatedAt: <date>
+      //   }
+      // ]
     });
 
 ### Auto increment attributes
